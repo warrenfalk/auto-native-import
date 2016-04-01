@@ -257,7 +257,7 @@ namespace NativeImport
 
             var type = typeBuilder.CreateType();
 
-            assemblyBuilder.Save("dynamic.dll");
+            //assemblyBuilder.Save("dynamic.dll");
 
             var construct = type.GetConstructor(new Type[] { typeof(INativeLibImporter), typeof(string) });
             var obj = construct.Invoke(new object[] { importer, name });
