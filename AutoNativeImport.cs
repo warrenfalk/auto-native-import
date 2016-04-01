@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ License: MIT - see license file at https://github.com/warrenfalk/auto-native-import/blob/master/LICENSE
+ Author: Warren Falk <warren@warrenfalk.com>
+ */
+using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
