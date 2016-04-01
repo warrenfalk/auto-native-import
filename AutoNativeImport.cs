@@ -14,7 +14,18 @@ namespace NativeImport
 {
     public static class Auto
     {
-        public static T Import<T>(string name) where T : class
+        /// <summary>
+        /// Imports the library by name (without extensions) locating it based on platform.
+        /// 
+        /// Use <code>suppressUnload</code> to prevent the dll from unloading at finalization,
+        /// which can be useful if you need to call the imported functions in finalizers of
+        /// other instances and can't predict in which order the finalization will occur
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name"></param>
+        /// <param name="suppressUnload">true to prevent unloading on finalization</param>
+        /// <returns></returns>
+        public static T Import<T>(string name, bool suppressUnload = false) where T : class
         {
             var subdir = Environment.Is64BitProcess ? "amd64" : "i386";
             var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "native", subdir, name);
@@ -213,11 +224,14 @@ namespace NativeImport
                 var end = il.DefineLabel();
 
                 il.BeginExceptionBlock();
-                il.Emit(OpCodes.Ldarg_0); // this
-                il.Emit(OpCodes.Ldfld, field_importer); // .importer
-                il.Emit(OpCodes.Ldarg_0); // this
-                il.Emit(OpCodes.Ldfld, field_libraryHandle); // .libraryHandle
-                il.Emit(OpCodes.Callvirt, typeof(INativeLibImporter).GetMethod("FreeLibrary")); // INativeLibImporter::FreeLibrary()
+                if (!suppressUnload)
+                {
+                    il.Emit(OpCodes.Ldarg_0); // this
+                    il.Emit(OpCodes.Ldfld, field_importer); // .importer
+                    il.Emit(OpCodes.Ldarg_0); // this
+                    il.Emit(OpCodes.Ldfld, field_libraryHandle); // .libraryHandle
+                    il.Emit(OpCodes.Callvirt, typeof(INativeLibImporter).GetMethod("FreeLibrary")); // INativeLibImporter::FreeLibrary()
+                }
                 //il.Emit(OpCodes.Leave, end);
                 il.BeginFinallyBlock();
                 il.Emit(OpCodes.Ldarg_0); // this
@@ -251,6 +265,7 @@ namespace NativeImport
                     il.Emit(OpCodes.Ldarg_3);
                 for (short argNum = 4; argNum <= args.Length; argNum++)
                     il.Emit(OpCodes.Ldarg_S, argNum);
+                il.Emit(OpCodes.Tailcall);
                 il.Emit(OpCodes.Callvirt, delegates[i].DelegateType.GetMethod("Invoke"));
                 il.Emit(OpCodes.Ret);
             }
